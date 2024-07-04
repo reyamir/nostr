@@ -15,6 +15,7 @@ keywords = ["nostr", "keyring"]
 #keyring = "2.3" # TODO: use only for ios target?
 nostr = { workspace = true, default-features = false, features = ["std", "nip49"] }
 thiserror.workspace = true
+tokio = { workspace = true, features = ["sync"] }
 
 [target.'cfg(not(all(target_os = "android", target_os = "ios")))'.dependencies]
 dirs = "5.0"

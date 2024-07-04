@@ -35,6 +35,9 @@ pub enum Error {
     #[cfg(not(all(target_os = "android", target_os = "ios")))]
     #[error("Can't get home directory")]
     CantGetHomeDir,
+    /// Watch only account
+    #[error("Watch only account")]
+    WatchOnlyAccount,
 }
 
 #[derive(Debug)]

@@ -2,7 +2,6 @@
 // Copyright (c) 2023-2024 Rust Nostr Developers
 // Distributed under the MIT software license
 
-pub const DEFAULT_FILE_NAME: &str = "keyring";
 pub const EXTENSION: &str = "dat";
 
 pub const ACCOUNT: u8 = 0x00;
