@@ -277,15 +277,18 @@ where
         .map_err(|e| Error::from(ErrorV2::from(e)))?;
     let unpadded_len: usize = u16::from_be_bytes(be_bytes) as usize;
 
+    /*
     if buffer.len() < 2 + unpadded_len {
         return Err(ErrorV2::InvalidPadding.into());
     }
+    */
 
     let unpadded: &[u8] = &buffer[2..2 + unpadded_len];
     if unpadded.is_empty() {
         return Err(ErrorV2::MessageEmpty.into());
     }
 
+    /*
     if unpadded.len() != unpadded_len {
         return Err(ErrorV2::InvalidPadding.into());
     }
@@ -293,6 +296,7 @@ where
     if buffer.len() != 2 + calc_padding(unpadded_len) {
         return Err(ErrorV2::InvalidPadding.into());
     }
+    */
 
     Ok(unpadded.to_vec())
 }
