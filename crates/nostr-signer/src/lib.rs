@@ -238,10 +238,16 @@ impl NostrSigner {
             return Err(Error::NIP59(nip59::Error::NotGiftWrap));
         }
 
+        // Test
+        let tag_content = gift_wrap
+            .get_tag_content(TagKind::SingleLetter(SingleLetterTag::lowercase(
+                Alphabet::P,
+            )))
+            .unwrap();
+        let public_key = PublicKey::parse(tag_content).unwrap();
+
         // Decrypt and verify seal
-        let seal: String = self
-            .nip44_decrypt(gift_wrap.author(), gift_wrap.content())
-            .await?;
+        let seal: String = self.nip44_decrypt(public_key, gift_wrap.content()).await?;
         let seal: Event = Event::from_json(seal)?;
         seal.verify()?;
 
