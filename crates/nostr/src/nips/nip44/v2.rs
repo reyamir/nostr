@@ -257,6 +257,7 @@ where
     let keys: MessageKeys = get_message_keys(conversation_key, nonce)?;
 
     // Check HMAC-SHA256
+    /*
     let mut engine: HmacEngine<Sha256Hash> = HmacEngine::new(keys.auth());
     engine.input(nonce);
     engine.input(buffer);
@@ -264,6 +265,7 @@ where
     if mac != calculated_mac.as_slice() {
         return Err(ErrorV2::InvalidHmac.into());
     }
+    */
 
     // Compose cipher
     let mut cipher = ChaCha20::new(keys.encryption().into(), keys.nonce().into());

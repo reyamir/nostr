@@ -196,7 +196,6 @@ where
 
     // Get version byte
     let version: u8 = *payload.first().ok_or(Error::VersionNotFound)?;
-    println!("version: {}", version);
 
     match Version::try_from(version)? {
         #[allow(deprecated)]
