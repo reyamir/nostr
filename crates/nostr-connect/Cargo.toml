@@ -23,6 +23,7 @@ nostr-relay-pool.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true, features = ["std", "attributes"] }
+webbrowser = "1.0.2"
 
 [dev-dependencies]
 dialoguer = "0.11"

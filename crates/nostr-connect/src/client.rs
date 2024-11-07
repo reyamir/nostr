@@ -192,6 +192,11 @@ impl NostrConnect {
                         if let Message::Response { id, result, error } = &msg {
                             if &req_id == id {
                                 if msg.is_auth_url() {
+                                    if let Some(str) = error {
+                                        if let Ok(url) = Url::parse(str) {
+                                            let _ = webbrowser::open(url.as_str());
+                                        }
+                                    }
                                     tracing::warn!("Received 'auth_url': {error:?}");
                                 } else {
                                     if let Some(result) = result {
