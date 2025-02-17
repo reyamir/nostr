@@ -2,6 +2,7 @@
 // Copyright (c) 2023-2025 Rust Nostr Developers
 // Distributed under the MIT software license
 
+use nips::nip38::Statuses;
 use nostr_sdk::prelude::*;
 
 #[tokio::main]
@@ -33,6 +34,11 @@ async fn main() -> Result<()> {
     client
         .send_event_builder_to(["wss://relay.damus.io", "wss://relay.rip"], builder)
         .await?;
+
+    // Create a live statuses event to relays
+    let builder =
+        EventBuilder::live_statuses("Building rust-nostr", Statuses::General, None, vec![]);
+    client.send_event_builder(builder).await?;
 
     Ok(())
 }
