@@ -6,7 +6,8 @@
 //!
 //! <https://github.com/nostr-protocol/nips/blob/master/38.md>
 
-use std::fmt;
+use alloc::string::String;
+use core::fmt;
 
 /// NIP38 types
 #[derive(Debug, PartialEq, Eq)]
@@ -22,9 +23,9 @@ pub enum Statuses {
 impl fmt::Display for Statuses {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Statuses::General => write!(f, "general"),
-            Statuses::Music => write!(f, "music"),
-            Statuses::Custom(s) => write!(f, "{}", s),
+            Self::General => write!(f, "general"),
+            Self::Music => write!(f, "music"),
+            Self::Custom(s) => write!(f, "{}", s),
         }
     }
 }
