@@ -7,6 +7,7 @@
 //! <https://github.com/nostr-protocol/nips/blob/master/38.md>
 
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 use core::fmt;
 
 use crate::{Tag, TagStandard, Timestamp};
