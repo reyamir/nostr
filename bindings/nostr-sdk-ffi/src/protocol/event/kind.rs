@@ -322,6 +322,10 @@ pub enum KindStandard {
     SetProduct,
     /// Job Feedback (NIP90)
     JobFeedback,
+    /// User Statuses
+    ///
+    /// <https://github.com/nostr-protocol/nips/blob/master/38.md>
+    UserStatuses,
 }
 
 fn convert(k: nostr::Kind) -> Option<KindStandard> {
@@ -406,6 +410,7 @@ fn convert(k: nostr::Kind) -> Option<KindStandard> {
         nostr::Kind::Torrent => Some(KindStandard::Torrent),
         nostr::Kind::TorrentComment => Some(KindStandard::TorrentComment),
         nostr::Kind::PeerToPeerOrder => Some(KindStandard::PeerToPeerOrder),
+        nostr::Kind::UserStatuses => Some(KindStandard::UserStatuses),
         nostr::Kind::Custom(..) => None,
     }
 }
@@ -487,6 +492,7 @@ impl From<KindStandard> for nostr::Kind {
             KindStandard::Torrent => Self::Torrent,
             KindStandard::TorrentComment => Self::TorrentComment,
             KindStandard::PeerToPeerOrder => Self::PeerToPeerOrder,
+            KindStandard::UserStatuses => Self::UserStatuses,
         }
     }
 }
