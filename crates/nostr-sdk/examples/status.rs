@@ -2,7 +2,7 @@
 // Copyright (c) 2023-2025 Rust Nostr Developers
 // Distributed under the MIT software license
 
-use nips::nip38::Statuses;
+use nips::nip38::{LiveStatus, StatusType};
 use nostr_sdk::prelude::*;
 
 #[tokio::main]
@@ -19,24 +19,21 @@ async fn main() -> Result<()> {
     client.connect().await;
 
     // Send a General statuses event to relays
-    let builder =
-        EventBuilder::live_statuses("Building rust-nostr", Statuses::General, None, vec![]);
+    let general = LiveStatus {
+        status_type: StatusType::General,
+        expiration: None,
+        reference: None,
+    };
+    let builder = EventBuilder::live_statuses("Building rust-nostr", general, vec![]);
     client.send_event_builder(builder).await?;
 
     // Send a Music statuses event to relays
-    let builder = EventBuilder::live_statuses(
-        "Intergalatic - Beastie Boys",
-        Statuses::Music,
-        Some(Timestamp::now()),
-        vec![Tag::from_standardized_without_cell(TagStandard::Reference(
-            "spotify:search:Intergalatic%20-%20Beastie%20Boys".into(),
-        ))],
-    );
-    client.send_event_builder(builder).await?;
-
-    // Send a Custom statuses event to relays
-    let builder =
-        EventBuilder::live_statuses("Custom", Statuses::Custom("Working".into()), None, vec![]);
+    let music = LiveStatus {
+        status_type: StatusType::Music,
+        expiration: Some(Timestamp::now()),
+        reference: Some("spotify:search:Intergalatic%20-%20Beastie%20Boys".into()),
+    };
+    let builder = EventBuilder::live_statuses("Intergalatic - Beastie Boys", music, vec![]);
     client.send_event_builder(builder).await?;
 
     Ok(())

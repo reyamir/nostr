@@ -9,9 +9,11 @@
 use alloc::string::String;
 use core::fmt;
 
+use crate::{Tag, TagStandard, Timestamp};
+
 /// NIP38 types
-#[derive(Debug, PartialEq, Eq)]
-pub enum Statuses {
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum StatusType {
     /// General status: "Working", "Hiking", etc.
     General,
     /// Music what you are currently listening to
@@ -20,12 +22,59 @@ pub enum Statuses {
     Custom(String),
 }
 
-impl fmt::Display for Statuses {
+impl Default for StatusType {
+    fn default() -> Self {
+        Self::General
+    }
+}
+
+impl fmt::Display for StatusType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::General => write!(f, "general"),
             Self::Music => write!(f, "music"),
             Self::Custom(s) => write!(f, "{}", s),
         }
+    }
+}
+
+/// User status
+#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LiveStatus {
+    /// Status type, includes: General, Music or Custom
+    pub status_type: StatusType,
+    /// Expiration time of the status (Optional)
+    pub expiration: Option<Timestamp>,
+    /// Reference to the external resource (Optional)
+    pub reference: Option<String>,
+}
+
+impl From<LiveStatus> for Vec<Tag> {
+    fn from(
+        LiveStatus {
+            status_type,
+            expiration,
+            reference,
+        }: LiveStatus,
+    ) -> Self {
+        let mut tags = Vec::with_capacity(3);
+
+        tags.push(Tag::from_standardized_without_cell(
+            TagStandard::Identifier(status_type.to_string()),
+        ));
+
+        if let Some(expire_at) = expiration {
+            tags.push(Tag::from_standardized_without_cell(
+                TagStandard::Expiration(expire_at),
+            ));
+        }
+
+        if let Some(content) = reference {
+            tags.push(Tag::from_standardized_without_cell(TagStandard::Reference(
+                content,
+            )));
+        }
+
+        tags
     }
 }

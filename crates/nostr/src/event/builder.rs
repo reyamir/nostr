@@ -15,7 +15,7 @@ use secp256k1::rand::{CryptoRng, Rng};
 use secp256k1::{Secp256k1, Signing, Verification};
 use serde_json::{json, Value};
 
-use crate::nips::nip38::Statuses;
+use crate::nips::nip38::LiveStatus;
 #[cfg(all(feature = "std", feature = "nip04", feature = "nip46"))]
 use crate::nips::nip46::Message as NostrConnectMessage;
 use crate::prelude::*;
@@ -1684,27 +1684,13 @@ impl EventBuilder {
     ///
     /// <https://github.com/nostr-protocol/nips/blob/master/38.md>
     #[inline]
-    pub fn live_statuses<S, I>(
-        content: S,
-        statuses: Statuses,
-        expiration: Option<Timestamp>,
-        extra_tags: I,
-    ) -> Self
+    pub fn live_statuses<S, I>(content: S, status: LiveStatus, extra_tags: I) -> Self
     where
         S: Into<String>,
         I: IntoIterator<Item = Tag>,
     {
-        let mut tags = vec![Tag::from_standardized_without_cell(
-            TagStandard::Identifier(statuses.to_string()),
-        )];
-
+        let mut tags: Vec<Tag> = status.into();
         tags.extend(extra_tags);
-
-        if let Some(expiration) = expiration {
-            tags.push(Tag::from_standardized_without_cell(
-                TagStandard::Expiration(expiration),
-            ));
-        };
 
         Self::new(Kind::UserStatuses, content).tags(tags)
     }
