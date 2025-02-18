@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
         expiration: None,
         reference: None,
     };
-    let builder = EventBuilder::live_statuses("Building rust-nostr", general, vec![]);
+    let builder = EventBuilder::live_statuses(general, "Building rust-nostr", vec![]);
     client.send_event_builder(builder).await?;
 
     // Send a Music statuses event to relays
@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
         expiration: Some(Timestamp::now()),
         reference: Some("spotify:search:Intergalatic%20-%20Beastie%20Boys".into()),
     };
-    let builder = EventBuilder::live_statuses("Intergalatic - Beastie Boys", music, vec![]);
+    let builder = EventBuilder::live_statuses(music, "Intergalatic - Beastie Boys", vec![]);
     client.send_event_builder(builder).await?;
 
     Ok(())

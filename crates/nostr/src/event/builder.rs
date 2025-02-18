@@ -1684,7 +1684,7 @@ impl EventBuilder {
     ///
     /// <https://github.com/nostr-protocol/nips/blob/master/38.md>
     #[inline]
-    pub fn live_statuses<S, I>(content: S, status: LiveStatus, extra_tags: I) -> Self
+    pub fn live_statuses<S, I>(status: LiveStatus, content: S, extra_tags: I) -> Self
     where
         S: Into<String>,
         I: IntoIterator<Item = Tag>,
