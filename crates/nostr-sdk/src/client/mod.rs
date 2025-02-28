@@ -1278,6 +1278,28 @@ impl Client {
         self.send_event_to(urls, &gift_wrap).await
     }
 
+    /// Send the gift wrap event to relays
+    ///
+    /// # Overview
+    ///
+    /// Send the [`Gift Wrap`] to all relays with [`RelayServiceFlags::WRITE`] flag.
+    ///
+    /// # Gossip
+    ///
+    /// If `gossip` is enabled (see [`Options::gossip`]):
+    /// - the [`Gift Wrap`] will be sent also to NIP17 relays (automatically discovered);
+    #[inline]
+    #[cfg(feature = "nip59")]
+    pub async fn send_gift_wrap(&self, gift_wrap: &Event) -> Result<Output<EventId>, Error> {
+        // NOT gossip, send event to all relays
+        if !self.opts.gossip {
+            return Ok(self.pool.send_event(gift_wrap).await?);
+        }
+
+        // Send event using gossip
+        self.gossip_send_event(gift_wrap, true).await
+    }
+
     /// Unwrap Gift Wrap event
     ///
     /// This method requires a [`NostrSigner`].

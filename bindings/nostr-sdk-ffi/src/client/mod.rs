@@ -568,6 +568,14 @@ impl Client {
             .into())
     }
 
+    /// Send gift wrap
+    ///
+    /// Send gift wrap to all relays with `WRITE` flag.
+    /// If `gossip` is enabled (see `Options`) the event will be sent also to NIP17 relays (automatically discovered).
+    pub async fn send_gift_wrap(&self, gift_wrap: &Event) -> Result<SendEventOutput> {
+        Ok(self.inner.send_event(gift_wrap.deref()).await?.into())
+    }
+
     /// Unwrap Gift Wrap event
     ///
     /// Internally verify the `seal` event
