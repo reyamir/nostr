@@ -32,6 +32,7 @@
 ### Breaking changes
 
 * nostr: update `Nip19Event` relays field type from `Vec<String>` to `Vec<RelayUrl>` ([Yuki Kishimoto])
+* nostr: change the `Err` type of `ToBech32` to `Infallible` for `SecretKey`, `PublicKey` and `EventId` ([awiteb])
 * nostr: update `Tags::new` signature ([Yuki Kishimoto])
 * nostr: remove `WeakTag` ([Yuki Kishimoto])
 * nostr: change `TagStandard::Relays` variant inner value from `Vec<Url>` to `Vec<RelayUrl>` ([Yuki Kishimoto])
@@ -42,7 +43,15 @@
 * nostr: change `EventBuilder::git_repository_announcement` constructor signature ([Yuki Kishimoto])
 * nostr: change `EventBuilder::git_issue` constructor signature ([Yuki Kishimoto])
 * nostr: change `EventBuilder::git_patch` constructor signature ([Yuki Kishimoto])
+* nostr: `TagStandard::parse` now returns `Err(Error::UnknownStandardizedTag)` for non-lowercase hashtags as per NIP-24 ([awiteb])
+* nostr: update `NostrWalletConnectURI` to support multiple relay URLs ([Yuki Kishimoto])
+* nostr: remove `EventIdOrCoordinate` enum ([Yuki Kishimoto])
+* nostr: change `EventBuilder::delete` arguments ([Yuki Kishimoto])
 * pool: drop `RelayFiltering` ([Yuki Kishimoto])
+* pool: remove `Relay` constructors ([Yuki Kishimoto])
+* pool: change `RelayPool::new` signature ([Yuki Kishimoto])
+* sdk: change `Client::fetch_metadata` output ([Yuki Kishimoto]) 
+* sdk: remove `Client::state` ([Yuki Kishimoto])
 
 ### Changed
 
@@ -59,13 +68,17 @@
 * lmdb: avoid long-lived read txn when ingesting event ([Yuki Kishimoto])
 * ndb: return `None` in `NostrEventsDatabase::event_by_id` if event doesn't exist ([Yuki Kishimoto])
 * ndb: avoid event clone when calling `NostrEventsDatabase::save_event` ([Yuki Kishimoto])
+* pool: better handling of auto-closing subscription activity when fetching events ([Yuki Kishimoto])
 * sdk: auto-update the gossip data when sending an event ([Yuki Kishimoto])
+* sdk: avoid full clone of relays when only urls are needed ([Yuki Kishimoto])
+* nwc: allow usage of multiple relays ([Yuki Kishimoto])
 * ffi: improve `Events::merge` and `Events::to_vec` performance ([Yuki Kishimoto])
 * ci: release wheels also for python `3.13` ([Yuki Kishimoto])
 
 ### Added
 
 * nostr: add NIP-38 support ([reyamir])
+* nostr: add NIP-60 event kinds ([Yuki Kishimoto])
 * nostr: add NIP-62 support ([awiteb])
 * nostr: add `nip21::extract_from_text` function ([Yuki Kishimoto])
 * nostr: add `EventBuilder::allow_self_tagging` ([Yuki Kishimoto])
@@ -81,15 +94,22 @@
 * nostr: add `TagStandard::Client` variant ([Yuki Kishimoto])
 * nostr: add `EventBuilder::dedup_tags` method ([Yuki Kishimoto])
 * nostr: impl `FromIterator<Tag>` for `Tags` ([Yuki Kishimoto])
+* nostr: add `EventDeletionRequest` struct ([Yuki Kishimoto])
+* nostr: add `notifications` field to NIP47 `GetInfoResponse` ([Yuki Kishimoto])
+* database: add `Events::force_insert` ([Yuki Kishimoto])
 * pool: event verification cache ([Yuki Kishimoto])
 * pool: add `AdmitPolicy` trait ([Yuki Kishimoto])
+* pool: add `ReqExitPolicy::WaitForEvents` variant ([Yuki Kishimoto])
+* pool: add `RelayPoolBuilder` ([Yuki Kishimoto])
 * ffi: add Mac Catalyst support in Swift package ([Yuki Kishimoto])
+* js: add `KindStandard` enum ([Yuki Kishimoto])
 
 ### Fixed
 
 * nostr: fix `EventBuilder::git_repository_announcement` constructor according to last NIP34 rev ([Yuki Kishimoto])
 * nostr: fix `EventBuilder::git_issue` constructor according to last NIP34 rev ([Yuki Kishimoto])
 * nostr: fix `EventBuilder::git_patch` constructor according to last NIP34 rev ([Yuki Kishimoto])
+* nostr: `Tag::hashtag` now lowercases the hashtag as per NIP-24 ([awiteb])
 
 ### Removed
 

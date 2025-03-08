@@ -205,6 +205,14 @@ impl JsClient {
     }
 
     /// Connect to all added relays
+    ///
+    /// Attempts to initiate a connection for every relay currently in
+    /// [`RelayStatus::Initialized`] or [`RelayStatus::Terminated`].
+    /// A background connection task is spawned for each such relay, which then tries
+    /// to establish the connection.
+    /// Any relay not in one of these two statuses is skipped.
+    ///
+    /// For further details, see the documentation of [`Relay::connect`].
     pub async fn connect(&self) {
         self.inner.connect().await
     }
@@ -220,10 +228,14 @@ impl JsClient {
 
     /// Try to establish a connection with the relays.
     ///
-    /// Attempts to establish a connection without spawning the connection task if it fails.
+    /// Attempts to establish a connection for every relay currently in
+    /// [`RelayStatus::Initialized`] or [`RelayStatus::Terminated`]
+    /// without spawning the connection task if it fails.
     /// This means that if the connection fails, no automatic retries are scheduled.
     /// Use [`Client::connect`] if you want to immediately spawn a connection task,
     /// regardless of whether the initial connection succeeds.
+    ///
+    /// For further details, see the documentation of [`Relay::try_connect`].
     #[wasm_bindgen(js_name = tryConnect)]
     pub async fn try_connect(&self, timeout: &JsDuration) -> JsOutput {
         self.inner.try_connect(**timeout).await.into()
@@ -496,7 +508,11 @@ impl JsClient {
             .map(|id| id.into())
     }
 
-    /// Fetch the newest public key metadata from database and connected relays.
+    /// Fetch the newest public key metadata from relays.
+    ///
+    /// Returns `None` if the `Metadata` of the `PublicKey` has not been found.
+    ///
+    /// Check `Client.fetchEvents` for more details.
     ///
     /// If you only want to consult cached data,
     /// consider `client.database().profile(PUBKEY)`.
@@ -507,12 +523,13 @@ impl JsClient {
         &self,
         public_key: &JsPublicKey,
         timeout: &JsDuration,
-    ) -> Result<JsMetadata> {
-        self.inner
+    ) -> Result<Option<JsMetadata>> {
+        Ok(self
+            .inner
             .fetch_metadata(**public_key, **timeout)
             .await
-            .map_err(into_err)
-            .map(|m| m.into())
+            .map_err(into_err)?
+            .map(|m| m.into()))
     }
 
     /// Update metadata

@@ -734,6 +734,8 @@ pub struct GetInfoResponse {
     pub block_hash: String,
     /// Available methods for this connection
     pub methods: Vec<String>,
+    /// List of supported notifications for this connection (optional)
+    pub notifications: Vec<String>,
 }
 
 impl From<nip47::GetInfoResponse> for GetInfoResponse {
@@ -746,6 +748,7 @@ impl From<nip47::GetInfoResponse> for GetInfoResponse {
             block_height: value.block_height,
             block_hash: value.block_hash,
             methods: value.methods,
+            notifications: value.notifications,
         }
     }
 }
@@ -760,6 +763,7 @@ impl From<GetInfoResponse> for nip47::GetInfoResponse {
             block_height: value.block_height,
             block_hash: value.block_hash,
             methods: value.methods,
+            notifications: value.notifications,
         }
     }
 }
@@ -924,13 +928,16 @@ impl NostrWalletConnectURI {
     #[uniffi::constructor]
     pub fn new(
         public_key: &PublicKey,
-        relay_url: &str,
+        relays: Vec<String>,
         random_secret_key: &SecretKey,
         lud16: Option<String>,
     ) -> Result<Self> {
         Ok(nip47::NostrWalletConnectURI::new(
             **public_key,
-            RelayUrl::parse(relay_url)?,
+            relays
+                .into_iter()
+                .map(|r| RelayUrl::parse(&r))
+                .collect::<Result<Vec<_>, _>>()?,
             random_secret_key.deref().clone(),
             lud16,
         )
@@ -947,9 +954,9 @@ impl NostrWalletConnectURI {
         Arc::new(self.inner.public_key.into())
     }
 
-    /// URL of the relay of choice where the `App` is connected and the `Signer` must send and listen for messages.
-    pub fn relay_url(&self) -> String {
-        self.inner.relay_url.to_string()
+    /// URLs of the relays of choice where the `App` is connected and the `Signer` must send and listen for messages.
+    pub fn relays(&self) -> Vec<String> {
+        self.inner.relays.iter().map(|r| r.to_string()).collect()
     }
 
     /// 32-byte randomly generated hex encoded string

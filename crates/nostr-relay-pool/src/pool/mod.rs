@@ -15,17 +15,18 @@ use atomic_destructor::{AtomicDestructor, StealthClone};
 use nostr_database::prelude::*;
 use tokio::sync::{broadcast, mpsc, RwLockReadGuard};
 
+pub mod builder;
 pub mod constants;
 mod error;
 mod inner;
 pub mod options;
 mod output;
 
+pub use self::builder::RelayPoolBuilder;
 pub use self::error::Error;
 use self::inner::{InnerRelayPool, Relays};
 pub use self::options::RelayPoolOptions;
 pub use self::output::Output;
-use crate::policy::AdmitPolicy;
 use crate::relay::flags::FlagCheck;
 use crate::relay::options::{RelayOptions, ReqExitPolicy, SyncOptions};
 use crate::relay::Relay;
@@ -79,7 +80,7 @@ pub struct RelayPool {
 
 impl Default for RelayPool {
     fn default() -> Self {
-        Self::new(RelayPoolOptions::default())
+        Self::builder().build()
     }
 }
 
@@ -92,28 +93,25 @@ impl StealthClone for RelayPool {
 }
 
 impl RelayPool {
-    /// Create new `RelayPool`
+    /// Construct new default relay pool
+    ///
+    /// Use [`RelayPool::builder`] to customize it.
     #[inline]
-    pub fn new(opts: RelayPoolOptions) -> Self {
-        Self::__with_shared_state(opts, SharedState::default())
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// New relay pool builder
+    #[inline]
+    pub fn builder() -> RelayPoolBuilder {
+        RelayPoolBuilder::default()
     }
 
     #[inline]
-    #[doc(hidden)]
-    pub fn __with_shared_state(opts: RelayPoolOptions, state: SharedState) -> Self {
+    fn from_builder(builder: RelayPoolBuilder) -> Self {
         Self {
-            inner: AtomicDestructor::new(InnerRelayPool::new(opts, state)),
+            inner: AtomicDestructor::new(InnerRelayPool::from_builder(builder)),
         }
-    }
-
-    /// Set an admission policy
-    #[inline]
-    pub fn set_admit_policy<T>(&self, policy: T) -> Result<(), Error>
-    where
-        T: AdmitPolicy + 'static,
-    {
-        self.inner.state.set_admit_policy(policy)?;
-        Ok(())
     }
 
     /// Completely shutdown pool
@@ -155,30 +153,41 @@ impl RelayPool {
         txn.iter().filter(move |(_, r)| r.flags().has(flag, check))
     }
 
-    /// Get relays with `READ` or `WRITE` relays
-    async fn relay_urls(&self) -> Vec<RelayUrl> {
+    /// Get relay URLs with specific flag/s
+    #[doc(hidden)]
+    pub async fn __relay_urls_with_flag(
+        &self,
+        flag: RelayServiceFlags,
+        check: FlagCheck,
+    ) -> Vec<RelayUrl> {
         let relays = self.inner.atomic.relays.read().await;
-        self.internal_relays_with_flag(
-            &relays,
+        self.internal_relays_with_flag(&relays, flag, check)
+            .map(|(k, ..)| k.clone())
+            .collect()
+    }
+
+    /// Get relays with `READ` or `WRITE` relays
+    #[doc(hidden)]
+    pub async fn __relay_urls(&self) -> Vec<RelayUrl> {
+        self.__relay_urls_with_flag(
             RelayServiceFlags::READ | RelayServiceFlags::WRITE,
             FlagCheck::Any,
         )
-        .map(|(k, ..)| k.clone())
-        .collect()
+        .await
     }
 
-    async fn read_relay_urls(&self) -> Vec<RelayUrl> {
-        let relays = self.inner.atomic.relays.read().await;
-        self.internal_relays_with_flag(&relays, RelayServiceFlags::READ, FlagCheck::All)
-            .map(|(k, ..)| k.clone())
-            .collect()
+    /// Get only READ relays
+    #[doc(hidden)]
+    pub async fn __read_relay_urls(&self) -> Vec<RelayUrl> {
+        self.__relay_urls_with_flag(RelayServiceFlags::READ, FlagCheck::All)
+            .await
     }
 
-    async fn write_relay_urls(&self) -> Vec<RelayUrl> {
-        let relays = self.inner.atomic.relays.read().await;
-        self.internal_relays_with_flag(&relays, RelayServiceFlags::WRITE, FlagCheck::All)
-            .map(|(k, ..)| k.clone())
-            .collect()
+    /// Get only WRITE relays
+    #[doc(hidden)]
+    pub async fn __write_relay_urls(&self) -> Vec<RelayUrl> {
+        self.__relay_urls_with_flag(RelayServiceFlags::WRITE, FlagCheck::All)
+            .await
     }
 
     /// Get all relays
@@ -198,7 +207,7 @@ impl RelayPool {
         .await
     }
 
-    /// Get relays that have a certain [RelayServiceFlag] enabled
+    /// Get relays that have a certain [`RelayServiceFlags`] enabled
     pub async fn relays_with_flag(
         &self,
         flag: RelayServiceFlags,
@@ -311,6 +320,17 @@ impl RelayPool {
     }
 
     /// Connect to all added relays
+    ///
+    /// Attempts to initiate a connection for every relay currently in
+    /// [`RelayStatus::Initialized`] or [`RelayStatus::Terminated`].
+    /// A background connection task is spawned for each such relay, which then tries
+    /// to establish the connection.
+    /// Any relay not in one of these two statuses is skipped.
+    ///
+    /// For further details, see the documentation of [`Relay::connect`].
+    ///
+    /// [`RelayStatus::Initialized`]: crate::relay::RelayStatus::Initialized
+    /// [`RelayStatus::Terminated`]: crate::relay::RelayStatus::Terminated
     pub async fn connect(&self) {
         // Lock with read shared access
         let relays = self.inner.atomic.relays.read().await;
@@ -341,7 +361,9 @@ impl RelayPool {
 
     /// Try to establish a connection with the relays.
     ///
-    /// Attempts to establish a connection without spawning the connection task if it fails.
+    /// Attempts to establish a connection for every relay currently in
+    /// [`RelayStatus::Initialized`] or [`RelayStatus::Terminated`]
+    /// without spawning the connection task if it fails.
     /// This means that if the connection fails, no automatic retries are scheduled.
     /// Use [`RelayPool::connect`] if you want to immediately spawn a connection task,
     /// regardless of whether the initial connection succeeds.
@@ -565,7 +587,7 @@ impl RelayPool {
 
     /// Send event to all relays with `WRITE` flag (check [`RelayServiceFlags`] for more details).
     pub async fn send_event(&self, event: &Event) -> Result<Output<EventId>, Error> {
-        let urls: Vec<RelayUrl> = self.write_relay_urls().await;
+        let urls: Vec<RelayUrl> = self.__write_relay_urls().await;
         self.send_event_to(urls, event).await
     }
 
@@ -677,7 +699,7 @@ impl RelayPool {
         }
 
         // Get relay urls
-        let urls: Vec<RelayUrl> = self.read_relay_urls().await;
+        let urls: Vec<RelayUrl> = self.__read_relay_urls().await;
 
         // Subscribe
         self.subscribe_with_id_to(urls, id, filter, opts).await
@@ -850,7 +872,7 @@ impl RelayPool {
         filter: Filter,
         opts: &SyncOptions,
     ) -> Result<Output<Reconciliation>, Error> {
-        let urls: Vec<RelayUrl> = self.relay_urls().await;
+        let urls: Vec<RelayUrl> = self.__relay_urls().await;
         self.sync_with(urls, filter, opts).await
     }
 
@@ -961,7 +983,7 @@ impl RelayPool {
         timeout: Duration,
         policy: ReqExitPolicy,
     ) -> Result<Events, Error> {
-        let urls: Vec<RelayUrl> = self.read_relay_urls().await;
+        let urls: Vec<RelayUrl> = self.__read_relay_urls().await;
         self.fetch_events_from(urls, filter, timeout, policy).await
     }
 
@@ -985,7 +1007,8 @@ impl RelayPool {
             .stream_events_from(urls, filter, timeout, policy)
             .await?;
         while let Some(event) = stream.next().await {
-            events.insert(event);
+            // To find out more about why the `force_insert` was used, search for EVENTS_FORCE_INSERT ine the code.
+            events.force_insert(event);
         }
 
         Ok(events)
@@ -998,7 +1021,7 @@ impl RelayPool {
         timeout: Duration,
         policy: ReqExitPolicy,
     ) -> Result<ReceiverStream<Event>, Error> {
-        let urls: Vec<RelayUrl> = self.read_relay_urls().await;
+        let urls: Vec<RelayUrl> = self.__read_relay_urls().await;
         self.stream_events_from(urls, filter, timeout, policy).await
     }
 

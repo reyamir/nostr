@@ -12,7 +12,6 @@ use std::time::Duration;
 
 use nostr::prelude::*;
 use nostr_database::prelude::*;
-use nostr_relay_pool::__private::SharedState;
 use nostr_relay_pool::prelude::*;
 use tokio::sync::broadcast;
 
@@ -80,26 +79,21 @@ impl Client {
     }
 
     fn from_builder(builder: ClientBuilder) -> Self {
-        // Construct shared state
-        let state = SharedState::new(
-            builder.database,
-            builder.websocket_transport,
-            builder.signer,
-            builder.admit_policy,
-            builder.opts.nip42_auto_authentication,
-        );
+        // Construct relay pool builder
+        let pool_builder: RelayPoolBuilder = RelayPoolBuilder {
+            websocket_transport: builder.websocket_transport,
+            admit_policy: builder.admit_policy,
+            opts: builder.opts.pool,
+            __database: builder.database,
+            __signer: builder.signer,
+        };
 
         // Construct client
         Self {
-            pool: RelayPool::__with_shared_state(builder.opts.pool, state),
+            pool: pool_builder.build(),
             gossip: Gossip::new(),
             opts: builder.opts,
         }
-    }
-
-    #[inline]
-    fn state(&self) -> &SharedState {
-        self.pool.state()
     }
 
     /// Update minimum POW difficulty for received events
@@ -116,13 +110,13 @@ impl Client {
     /// <https://github.com/nostr-protocol/nips/blob/master/42.md>
     #[inline]
     pub fn automatic_authentication(&self, enable: bool) {
-        self.state().automatic_authentication(enable);
+        self.pool.state().automatic_authentication(enable);
     }
 
     /// Check if signer is configured
     #[inline]
     pub async fn has_signer(&self) -> bool {
-        self.state().has_signer().await
+        self.pool.state().has_signer().await
     }
 
     /// Get current nostr signer
@@ -132,7 +126,7 @@ impl Client {
     /// Returns an error if the signer isn't set.
     #[inline]
     pub async fn signer(&self) -> Result<Arc<dyn NostrSigner>, Error> {
-        Ok(self.state().signer().await?)
+        Ok(self.pool.state().signer().await?)
     }
 
     /// Set nostr signer
@@ -141,13 +135,13 @@ impl Client {
     where
         T: IntoNostrSigner,
     {
-        self.state().set_signer(signer).await;
+        self.pool.state().set_signer(signer).await;
     }
 
     /// Unset nostr signer
     #[inline]
     pub async fn unset_signer(&self) {
-        self.state().unset_signer().await;
+        self.pool.state().unset_signer().await;
     }
 
     /// Get [`RelayPool`]
@@ -170,7 +164,6 @@ impl Client {
     /// * unsubscribe from all subscriptions
     /// * disconnect and force remove all relays
     /// * unset the signer
-    /// * clear the [`RelayFiltering`]
     ///
     /// This method will NOT:
     /// * reset [`Options`]
@@ -444,6 +437,14 @@ impl Client {
     }
 
     /// Connect to all added relays
+    ///
+    /// Attempts to initiate a connection for every relay currently in
+    /// [`RelayStatus::Initialized`] or [`RelayStatus::Terminated`].
+    /// A background connection task is spawned for each such relay, which then tries
+    /// to establish the connection.
+    /// Any relay not in one of these two statuses is skipped.
+    ///
+    /// For further details, see the documentation of [`Relay::connect`].
     #[inline]
     pub async fn connect(&self) {
         self.pool.connect().await;
@@ -460,12 +461,14 @@ impl Client {
 
     /// Try to establish a connection with the relays.
     ///
-    /// Attempts to establish a connection without spawning the connection task if it fails.
+    /// Attempts to establish a connection for every relay currently in
+    /// [`RelayStatus::Initialized`] or [`RelayStatus::Terminated`]
+    /// without spawning the connection task if it fails.
     /// This means that if the connection fails, no automatic retries are scheduled.
     /// Use [`Client::connect`] if you want to immediately spawn a connection task,
     /// regardless of whether the initial connection succeeds.
     ///
-    /// For further details, see the documentation of [`RelayPool::try_connect`].
+    /// For further details, see the documentation of [`Relay::try_connect`].
     #[inline]
     pub async fn try_connect(&self, timeout: Duration) -> Output<()> {
         self.pool.try_connect(timeout).await
@@ -781,7 +784,7 @@ impl Client {
     /// This method will be deprecated in the future!
     /// This is a temporary solution for who still want to query events both from database and relays and merge the result.
     /// The optimal solution is to execute a [`Client::sync`] to reconcile missing events, [`Client::subscribe`] to get all
-    /// new future events, [`NostrDatabase::query`] to query stored events and [`Client::handle_notifications`] to listen-for/handle new events (i.e. to know when update the UI).
+    /// new future events, [`NostrEventsDatabase::query`] to query stored events and [`Client::handle_notifications`] to listen-for/handle new events (i.e. to know when update the UI).
     /// This will allow very fast queries, low bandwidth usage (depending on how many events the client have to reconcile) and a lower load on the relays.
     ///
     /// You can obtain the same result with:
@@ -1020,6 +1023,10 @@ impl Client {
 
     /// Fetch the newest public key metadata from relays.
     ///
+    /// Returns [`None`] if the [`Metadata`] of the  [`PublicKey`] has not been found.
+    ///
+    /// Check [`Client::fetch_events`] for more details.
+    ///
     /// If you only want to consult stored data,
     /// consider `client.database().profile(PUBKEY)`.
     ///
@@ -1028,15 +1035,15 @@ impl Client {
         &self,
         public_key: PublicKey,
         timeout: Duration,
-    ) -> Result<Metadata, Error> {
+    ) -> Result<Option<Metadata>, Error> {
         let filter: Filter = Filter::new()
             .author(public_key)
             .kind(Kind::Metadata)
             .limit(1);
         let events: Events = self.fetch_events(filter, timeout).await?;
         match events.first() {
-            Some(event) => Ok(Metadata::try_from(event)?),
-            None => Err(Error::MetadataNotFound),
+            Some(event) => Ok(Some(Metadata::try_from(event)?)),
+            None => Ok(None),
         }
     }
 
@@ -1351,19 +1358,17 @@ impl Client {
         let stored_events: Events = self.database().query(filter.clone()).await?;
 
         // Get DISCOVERY and READ relays
-        // TODO: avoid clone of both url and relay
-        let relays = self
+        let urls: Vec<RelayUrl> = self
             .pool
-            .relays_with_flag(
+            .__relay_urls_with_flag(
                 RelayServiceFlags::DISCOVERY | RelayServiceFlags::READ,
                 FlagCheck::Any,
             )
-            .await
-            .into_keys();
+            .await;
 
         // Get events from discovery and read relays
         let events: Events = self
-            .fetch_events_from(relays, filter, Duration::from_secs(10))
+            .fetch_events_from(urls, filter, Duration::from_secs(10))
             .await?;
 
         // Update last check for these public keys
@@ -1391,13 +1396,10 @@ impl Client {
             BrokenDownFilters::Filters(filters) => filters,
             BrokenDownFilters::Orphan(filter) | BrokenDownFilters::Other(filter) => {
                 // Get read relays
-                let read_relays = self
-                    .pool
-                    .relays_with_flag(RelayServiceFlags::READ, FlagCheck::All)
-                    .await;
+                let read_relays: Vec<RelayUrl> = self.pool.__read_relay_urls().await;
 
                 let mut map = HashMap::with_capacity(read_relays.len());
-                for url in read_relays.into_keys() {
+                for url in read_relays.into_iter() {
                     map.insert(url, filter.clone());
                 }
                 map
@@ -1483,12 +1485,7 @@ impl Client {
             }
 
             // Get WRITE relays
-            // TODO: avoid clone of both url and relay
-            let write_relays = self
-                .pool
-                .relays_with_flag(RelayServiceFlags::WRITE, FlagCheck::All)
-                .await
-                .into_keys();
+            let write_relays: Vec<RelayUrl> = self.pool.__write_relay_urls().await;
 
             // Extend OUTBOX relays with WRITE ones
             outbox.extend(write_relays);
@@ -1534,7 +1531,8 @@ impl Client {
             self.gossip_stream_events(filter, timeout, policy).await?;
 
         while let Some(event) = stream.next().await {
-            events.insert(event);
+            // To find out more about why the `force_insert` was used, search for EVENTS_FORCE_INSERT ine the code.
+            events.force_insert(event);
         }
 
         Ok(events)
