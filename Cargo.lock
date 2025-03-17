@@ -5939,8 +5939,9 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "uniffi"
-version = "0.28.3"
-source = "git+https://github.com/yukibtc/uniffi-rs?rev=a6c2f678b43c15df6969ba5f50aa76523e3f3f79#a6c2f678b43c15df6969ba5f50aa76523e3f3f79"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba62a57e90f9baed5ad02a71a0870180fa1cc35499093b2d21be2edfb68ec0f7"
 dependencies = [
  "anyhow",
  "camino",
@@ -5953,8 +5954,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi_bindgen"
-version = "0.28.3"
-source = "git+https://github.com/yukibtc/uniffi-rs?rev=a6c2f678b43c15df6969ba5f50aa76523e3f3f79#a6c2f678b43c15df6969ba5f50aa76523e3f3f79"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2242f35214f1e0e3b47c495d340c69f649f9a9ece3a943a29e275686cc884533"
 dependencies = [
  "anyhow",
  "camino",
@@ -5975,8 +5977,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi_core"
-version = "0.28.3"
-source = "git+https://github.com/yukibtc/uniffi-rs?rev=a6c2f678b43c15df6969ba5f50aa76523e3f3f79#a6c2f678b43c15df6969ba5f50aa76523e3f3f79"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cad9fbdeb7ae4daf8d0f7704a3b638c37018eb16bb701e30fa17a2dd3e2d39c1"
 dependencies = [
  "anyhow",
  "async-compat",
@@ -5988,8 +5991,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi_internal_macros"
-version = "0.28.3"
-source = "git+https://github.com/yukibtc/uniffi-rs?rev=a6c2f678b43c15df6969ba5f50aa76523e3f3f79#a6c2f678b43c15df6969ba5f50aa76523e3f3f79"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22a9dba1d78b9ce429439891089c223478043d52a1c3176a0fcea2b5573a7fcf"
 dependencies = [
  "quote",
  "syn 2.0.90",
@@ -5997,8 +6001,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi_macros"
-version = "0.28.3"
-source = "git+https://github.com/yukibtc/uniffi-rs?rev=a6c2f678b43c15df6969ba5f50aa76523e3f3f79#a6c2f678b43c15df6969ba5f50aa76523e3f3f79"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78dd5f8eefba5898b901086f5e7916da67b9a5286a01cc44e910cd75fa37c630"
 dependencies = [
  "camino",
  "fs-err",
@@ -6013,8 +6018,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi_meta"
-version = "0.28.3"
-source = "git+https://github.com/yukibtc/uniffi-rs?rev=a6c2f678b43c15df6969ba5f50aa76523e3f3f79#a6c2f678b43c15df6969ba5f50aa76523e3f3f79"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d5965b1d4ffacef1eaa72fef9c00d2491641e87ad910f6c5859b9c503ddb16a"
 dependencies = [
  "anyhow",
  "siphasher",
@@ -6023,8 +6029,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi_udl"
-version = "0.28.3"
-source = "git+https://github.com/yukibtc/uniffi-rs?rev=a6c2f678b43c15df6969ba5f50aa76523e3f3f79#a6c2f678b43c15df6969ba5f50aa76523e3f3f79"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "279b82bac9a382c796a0d210bb8354a0b813499b28aa1de046c85d78ca389805"
 dependencies = [
  "anyhow",
  "textwrap",
@@ -6317,7 +6324,8 @@ dependencies = [
 [[package]]
 name = "weedle2"
 version = "5.0.0"
-source = "git+https://github.com/yukibtc/uniffi-rs?rev=a6c2f678b43c15df6969ba5f50aa76523e3f3f79#a6c2f678b43c15df6969ba5f50aa76523e3f3f79"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "998d2c24ec099a87daf9467808859f9d82b61f1d9c9701251aea037f514eae0e"
 dependencies = [
  "nom",
 ]
