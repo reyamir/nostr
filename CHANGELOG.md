@@ -25,9 +25,13 @@
 
 -->
 
-## [Unreleased]
+## [v0.40.0]
 
 ### Summary
+
+Add NIP-38 and NIP-62 support, add nostr parser, to easily parse any text and extract nostr URIs, URLs and more, 
+extend `Tags` capabilities (i.e., add deduplication support), add admission policies, to selectively select which events to allow receiving and which to reject, 
+add Mac Catalyst support for Swift package, many cleanups, refactoring and performance improvements and more!
 
 ### Breaking changes
 
@@ -50,6 +54,7 @@
 * pool: drop `RelayFiltering` ([Yuki Kishimoto])
 * pool: remove `Relay` constructors ([Yuki Kishimoto])
 * pool: change `RelayPool::new` signature ([Yuki Kishimoto])
+* pool: now can set the notification channel size of a single `Relay` using `RelayOptions` ([magine])
 * sdk: change `Client::fetch_metadata` output ([Yuki Kishimoto]) 
 * sdk: remove `Client::state` ([Yuki Kishimoto])
 
@@ -69,6 +74,8 @@
 * ndb: return `None` in `NostrEventsDatabase::event_by_id` if event doesn't exist ([Yuki Kishimoto])
 * ndb: avoid event clone when calling `NostrEventsDatabase::save_event` ([Yuki Kishimoto])
 * pool: better handling of auto-closing subscription activity when fetching events ([Yuki Kishimoto])
+* pool: reduce `WAIT_FOR_OK_TIMEOUT` to 10 secs ([Yuki Kishimoto])
+* pool: handle CLOSED message when syncing ([Yuki Kishimoto])
 * sdk: auto-update the gossip data when sending an event ([Yuki Kishimoto])
 * sdk: avoid full clone of relays when only urls are needed ([Yuki Kishimoto])
 * nwc: allow usage of multiple relays ([Yuki Kishimoto])
@@ -80,6 +87,7 @@
 * nostr: add NIP-38 support ([reyamir])
 * nostr: add NIP-60 event kinds ([Yuki Kishimoto])
 * nostr: add NIP-62 support ([awiteb])
+* nostr: add `NostrParser` ([Yuki Kishimoto])
 * nostr: add `nip21::extract_from_text` function ([Yuki Kishimoto])
 * nostr: add `EventBuilder::allow_self_tagging` ([Yuki Kishimoto])
 * nostr: add `Nip19Event::from_event` ([Yuki Kishimoto])
@@ -96,11 +104,15 @@
 * nostr: impl `FromIterator<Tag>` for `Tags` ([Yuki Kishimoto])
 * nostr: add `EventDeletionRequest` struct ([Yuki Kishimoto])
 * nostr: add `notifications` field to NIP47 `GetInfoResponse` ([Yuki Kishimoto])
+* nostr: add `RelayMetadata::as_str` method ([Yuki Kishimoto])
+* nostr: add `nip42::is_valid_auth_event` function ([Yuki Kishimoto])
+* nostr: add `Tag::relays` constructor ([Yuki Kishimoto])
 * database: add `Events::force_insert` ([Yuki Kishimoto])
 * pool: event verification cache ([Yuki Kishimoto])
 * pool: add `AdmitPolicy` trait ([Yuki Kishimoto])
 * pool: add `ReqExitPolicy::WaitForEvents` variant ([Yuki Kishimoto])
 * pool: add `RelayPoolBuilder` ([Yuki Kishimoto])
+* pool: add `RelayPool::is_shutdown` method ([Yuki Kishimoto])
 * ffi: add Mac Catalyst support in Swift package ([Yuki Kishimoto])
 * js: add `KindStandard` enum ([Yuki Kishimoto])
 
@@ -1172,9 +1184,11 @@ added `nostrdb` storage backend, added NIP32 and completed NIP51 support and mor
 [Francisco Calderón]: https://github.com/grunch (nostr:npub1qqqqqqqx2tj99mng5qgc07cgezv5jm95dj636x4qsq7svwkwmwnse3rfkq)
 [cipres]: https://github.com/PancakesArchitect (nostr:npub1r3cnzta52fee26c83cnes8wvzkch3kud2kll67k402x04mttt26q0wfx0c)
 [awiteb]: https://git.4rs.nl (nostr:nprofile1qqsqqqqqq9g9uljgjfcyd6dm4fegk8em2yfz0c3qp3tc6mntkrrhawgpzfmhxue69uhkummnw3ezudrjwvhxumq3dg0ly)
+[magine]: https://github.com/ma233 (?)
 
 <!-- Tags -->
-[Unreleased]: https://github.com/rust-nostr/nostr/compare/v0.39.0...HEAD
+[Unreleased]: https://github.com/rust-nostr/nostr/compare/v0.40.0...HEAD
+[v0.40.0]: https://github.com/rust-nostr/nostr/compare/v0.39.0...v0.40.0
 [v0.39.0]: https://github.com/rust-nostr/nostr/compare/v0.38.0...v0.39.0
 [v0.38.0]: https://github.com/rust-nostr/nostr/compare/v0.37.0...v0.38.0
 [v0.37.0]: https://github.com/rust-nostr/nostr/compare/v0.36.0...v0.37.0
