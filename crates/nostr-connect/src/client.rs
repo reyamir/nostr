@@ -295,6 +295,8 @@ impl NostrConnect {
                                     break;
                                 }
                             }
+                        } else {
+                            println!("error: {}", msg);
                         }
                     }
                 }
