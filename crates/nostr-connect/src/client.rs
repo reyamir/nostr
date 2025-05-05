@@ -392,7 +392,6 @@ impl NostrConnect {
             ciphertext: payload,
         };
         let res = self.send_request(req).await?;
-        println!("test res: {:?}", res);
         Ok(res.to_encrypt_decrypt()?)
     }
 

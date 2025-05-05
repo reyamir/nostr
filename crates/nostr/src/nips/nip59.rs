@@ -96,19 +96,16 @@ impl UnwrappedGift {
         if gift_wrap.kind != Kind::GiftWrap {
             return Err(Error::NotGiftWrap);
         }
-        println!("test");
 
         // Decrypt and verify seal
         let seal: String = signer
             .nip44_decrypt(&gift_wrap.pubkey, &gift_wrap.content)
             .await?;
-        println!("seal: {}", seal);
         let seal: Event = Event::from_json(seal)?;
         seal.verify_with_ctx(secp)?;
 
         // Decrypt rumor
         let rumor: String = signer.nip44_decrypt(&seal.pubkey, &seal.content).await?;
-        println!("rumor: {}", rumor);
 
         Ok(UnwrappedGift {
             sender: seal.pubkey,

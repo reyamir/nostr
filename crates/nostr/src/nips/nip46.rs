@@ -463,6 +463,7 @@ impl ResponseResult {
 
     #[inline]
     pub fn to_encrypt_decrypt(self) -> Result<String, Error> {
+        println!("test nip44: {:?}", self);
         if let Self::EncryptionDecryption(val) = self {
             Ok(val)
         } else {
