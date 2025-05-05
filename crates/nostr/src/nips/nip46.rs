@@ -464,11 +464,16 @@ impl ResponseResult {
     #[inline]
     pub fn to_encrypt_decrypt(self) -> Result<String, Error> {
         println!("test nip44: {:?}", self);
+        Self::print_type(&self);
         if let Self::EncryptionDecryption(val) = self {
             Ok(val)
         } else {
             Err(Error::UnexpectedResult)
         }
+    }
+
+    fn print_type<T>(_: &T) {
+        println!("type {:?}", std::any::type_name::<T>());
     }
 }
 
