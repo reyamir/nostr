@@ -285,6 +285,7 @@ impl NostrConnect {
                                     }
                                 } else {
                                     if let Some(result) = result {
+                                        println!("result: {:?}", result);
                                         return Ok(result.clone());
                                     }
 
@@ -294,9 +295,9 @@ impl NostrConnect {
 
                                     break;
                                 }
+                            } else {
+                                println!("error: {:?}", msg)
                             }
-                        } else {
-                            println!("error: {}", msg);
                         }
                     }
                 }
