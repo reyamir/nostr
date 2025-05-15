@@ -1247,19 +1247,11 @@ impl Client {
     /// <https://github.com/nostr-protocol/nips/blob/master/17.md>
     #[inline]
     #[cfg(feature = "nip59")]
-    pub async fn send_custom_private_msg<S, I>(
-        &self,
-        event: Event,
-    ) -> Result<Output<EventId>, Error>
-    where
-        S: Into<String>,
-        I: IntoIterator<Item = Tag>,
-    {
+    pub async fn send_custom_private_msg(&self, event: Event) -> Result<Output<EventId>, Error> {
         // NOT gossip, send to all relays
         if !self.opts.gossip {
             return self.send_event(&event).await;
         }
-
         self.gossip_send_event(&event, true).await
     }
 
