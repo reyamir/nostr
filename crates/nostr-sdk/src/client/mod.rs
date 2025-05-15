@@ -1232,6 +1232,40 @@ impl Client {
         self.send_event_to(urls, &event).await
     }
 
+    /// Send a custom private direct message
+    ///
+    /// If `gossip` is enabled (see [`Options::gossip`]) the message will be sent to the NIP17 relays (automatically discovered).
+    /// If gossip is not enabled will be sent to all relays with [`RelayServiceFlags::WRITE`] flag.
+    ///
+    /// This method requires a [`NostrSigner`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::PrivateMsgRelaysNotFound`] if the receiver hasn't set the NIP17 list,
+    /// meaning that is not ready to receive private messages.
+    ///
+    /// <https://github.com/nostr-protocol/nips/blob/master/17.md>
+    #[inline]
+    #[cfg(feature = "nip59")]
+    pub async fn send_custom_private_msg<S, I>(
+        &self,
+        builder: EventBuilder,
+    ) -> Result<Output<EventId>, Error>
+    where
+        S: Into<String>,
+        I: IntoIterator<Item = Tag>,
+    {
+        let signer = self.signer().await?;
+        let event: Event = builder.sign(&signer).await?;
+
+        // NOT gossip, send to all relays
+        if !self.opts.gossip {
+            return self.send_event(&event).await;
+        }
+
+        self.gossip_send_event(&event, true).await
+    }
+
     /// Construct Gift Wrap and send to relays
     ///
     /// This method requires a [`NostrSigner`].
