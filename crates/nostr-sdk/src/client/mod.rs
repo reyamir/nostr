@@ -1249,15 +1249,12 @@ impl Client {
     #[cfg(feature = "nip59")]
     pub async fn send_custom_private_msg<S, I>(
         &self,
-        builder: EventBuilder,
+        event: Event,
     ) -> Result<Output<EventId>, Error>
     where
         S: Into<String>,
         I: IntoIterator<Item = Tag>,
     {
-        let signer = self.signer().await?;
-        let event: Event = builder.sign(&signer).await?;
-
         // NOT gossip, send to all relays
         if !self.opts.gossip {
             return self.send_event(&event).await;
