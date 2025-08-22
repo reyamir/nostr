@@ -34,7 +34,6 @@ use serde_json::{json, Value};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot::Sender;
 use tokio::sync::{oneshot, Mutex, Notify};
-use tokio::time;
 use uuid::Uuid;
 
 mod error;
@@ -313,7 +312,7 @@ impl BrowserSignerProxy {
         let state: Arc<ProxyState> = self.inner.state.clone();
         let shutdown: Arc<Notify> = self.inner.shutdown.clone();
 
-        tokio::spawn(async move {
+        async_utility::task::spawn(async move {
             tracing::info!("Starting proxy server on {addr}");
 
             loop {
@@ -331,7 +330,7 @@ impl BrowserSignerProxy {
                         let state: Arc<ProxyState> = state.clone();
                         let shutdown: Arc<Notify> = shutdown.clone();
 
-                        tokio::spawn(async move {
+                        async_utility::task::spawn(async move {
                             let service = service_fn(move |req| {
                                 handle_request(req, state.clone())
                             });
@@ -392,12 +391,13 @@ impl BrowserSignerProxy {
         self.store_outgoing_request(request).await;
 
         // Wait for response
-        match time::timeout(self.inner.options.timeout, rx)
-            .await
-            .map_err(|_| Error::Timeout)??
-        {
-            Ok(res) => Ok(serde_json::from_value(res)?),
-            Err(error) => Err(Error::Generic(error)),
+        match async_utility::time::timeout(Some(self.inner.options.timeout), rx).await {
+            Some(Ok(res)) => match res {
+                Ok(res) => Ok(serde_json::from_value(res)?),
+                Err(error) => Err(Error::Generic(error)),
+            },
+            Some(Err(error)) => Err(Error::OneShotRecv(error)),
+            None => Err(Error::Timeout),
         }
     }
 
