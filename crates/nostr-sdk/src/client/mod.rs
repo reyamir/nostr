@@ -1338,7 +1338,7 @@ impl Client {
         // Compose filters
         let filter: Filter = Filter::default()
             .authors(outdated_public_keys.clone())
-            .kinds([Kind::RelayList, Kind::InboxRelays]);
+            .kind(Kind::RelayList);
 
         // Query from database
         let stored_events: Events = self.database().query(filter.clone()).await?;
